@@ -25,11 +25,13 @@ endif ()
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # Add an "uninstall" target
-CONFIGURE_FILE ("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in"
-    "${PROJECT_BINARY_DIR}/uninstall_target.cmake" IMMEDIATE @ONLY)
-ADD_CUSTOM_TARGET (uninstall "${CMAKE_COMMAND}" -P
-    "${PROJECT_BINARY_DIR}/uninstall_target.cmake")
 
+if(BUILD_UNINSTALL)
+    CONFIGURE_FILE ("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in"
+        "${PROJECT_BINARY_DIR}/uninstall_target.cmake" IMMEDIATE @ONLY)
+    ADD_CUSTOM_TARGET (uninstall "${CMAKE_COMMAND}" -P
+        "${PROJECT_BINARY_DIR}/uninstall_target.cmake")
+endif()
 # Set the build type.  Options are:
 #  Debug          : w/ debug symbols, w/o optimization
 #  Release        : w/o debug symbols, w/ optimization
