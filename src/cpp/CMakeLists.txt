@@ -89,31 +89,33 @@ endif()
 
 
 if (BUILD_C_BINDINGS)
-    add_library(flann_s STATIC ${C_SOURCES})
-    target_link_libraries(flann_s -Wl,--push-state,--no-as-needed ${LZ4_LIBRARIES} -Wl,--pop-state)
-    if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-        set_target_properties(flann_s PROPERTIES COMPILE_FLAGS -fPIC)
+    if(NOT BUILD_SHARED_LIBS)
+        add_library(flann_s STATIC ${C_SOURCES})
+        target_link_libraries(flann_s -Wl,--push-state,--no-as-needed ${LZ4_LIBRARIES} -Wl,--pop-state)
+        if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+            set_target_properties(flann_s PROPERTIES COMPILE_FLAGS -fPIC)
+        endif()
+        set_property(TARGET flann_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
     endif()
-    set_property(TARGET flann_s PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
-
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_COMPILER_IS_GNUCC)
-        add_library(flann SHARED "")
-        set_target_properties(flann PROPERTIES LINKER_LANGUAGE CXX)
-        target_link_libraries(flann -Wl,-whole-archive flann_s -Wl,-no-whole-archive)
-    else()
+    if(BUILD_SHARED_LIBS)
         add_library(flann SHARED ${C_SOURCES})
         target_link_libraries(flann -Wl,--push-state,--no-as-needed ${LZ4_LIBRARIES} -Wl,--pop-state)
+        set_target_properties(flann PROPERTIES LINKER_LANGUAGE CXX)
+        set_property(TARGET flann PROPERTY COMPILE_DEFINITIONS FLANN_STATIC)
 
-        if(MINGW AND OPENMP_FOUND)
-          target_link_libraries(flann gomp)
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_COMPILER_IS_GNUCC)
+            else()
+        
+                if(MINGW AND OPENMP_FOUND)
+                target_link_libraries(flann gomp)
+                endif()
         endif()
+        set_target_properties(flann PROPERTIES
+            VERSION ${FLANN_VERSION}
+            SOVERSION ${FLANN_SOVERSION}
+            DEFINE_SYMBOL FLANN_EXPORTS
+        )
     endif()
-
-    set_target_properties(flann PROPERTIES
-       VERSION ${FLANN_VERSION}
-       SOVERSION ${FLANN_SOVERSION}
-       DEFINE_SYMBOL FLANN_EXPORTS
-    )
 endif()
 
 if(WIN32)
@@ -166,9 +168,20 @@ if(TARGET flann_cuda_s)
     )
 endif()
 
-if (BUILD_C_BINDINGS)
+if(TARGET flann_s)
     install (
-        TARGETS flann flann_s
+        TARGETS flann_s
+        EXPORT ${targets_export_name}
+        INCLUDES DESTINATION include
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION ${FLANN_LIB_INSTALL_DIR}
+        ARCHIVE DESTINATION ${FLANN_LIB_INSTALL_DIR}
+    )
+endif()
+
+if(TARGET flann)
+    install (
+        TARGETS flann
         EXPORT ${targets_export_name}
         INCLUDES DESTINATION include
         RUNTIME DESTINATION bin
